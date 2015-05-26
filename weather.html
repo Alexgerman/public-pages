@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+
+    <script type="text/javascript" src="http://underscorejs.ru/underscore-min.js"></script>
+
+    <style>
+        .block {
+            border: 1px solid #333333;
+            text-align: center;
+            float: left;
+            width: 200px;
+            margin: 5px;
+            overflow: hidden;
+        }
+
+        .block img {
+            height: 50px;
+            width: 50px;
+        }
+
+        h2, h3 {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<h2 id="place"></h2>
+
+<div id="weather"></div>
+
+<script type="text/html" id="_weather_block">
+    <div class="block">
+        <h3>{{week_day}}, {{day}} {{month}}</h3>
+        <img src="{{image}}"/>
+
+        <p>{{conditions}}</p>
+
+        <p>{{low}} - {{high}} °C</p>
+    </div>
+</script>
+
+<script>
+    _.templateSettings = {
+        interpolate: /\{\{(.+?)\}\}/g
+    };
+
+    var template = document.getElementById('_weather_block').innerHTML;
+
+    var getWeatherComplete = function(e) {
+        var weather = JSON.parse(e.target.responseText),
+                simpleforecast = weather.forecast.simpleforecast.forecastday,
+                block = '', row;
+
+        for (var i = 0; i < 5; i++) {
+            row = simpleforecast[i];
+            block += _.template(template, {
+                week_day: row.date.weekday_short,
+                day: row.date.day,
+                month: row.date.monthname,
+                image: row.icon_url,
+                conditions: row.conditions,
+                low: row.low.celsius,
+                high: row.high.celsius
+            });
+        }
+
+        document.getElementById('weather').innerHTML = block;
+    };
+
+    var getPlaceComplete = function(e) {
+        var place = JSON.parse(e.target.responseText);
+        document.getElementById('place').innerHTML = place.location.country + ' / ' + place.location.city;
+    }
+
+    navigator.geolocation.getCurrentPosition(function(position) {
+        var urlWeather = ['http://api.wunderground.com/api/5e45ee03793c7cd8/forecast10day/q/', position.coords.latitude, ',', position.coords.longitude, '.json'];
+        xhr = new XMLHttpRequest();
+        xhr.overrideMimeType("application/json");
+        xhr.open("GET", urlWeather.join(''), true);
+        xhr.onload = getWeatherComplete;
+        xhr.send();
+
+        var urlPlace = ['http://api.wunderground.com/api/5e45ee03793c7cd8/geolookup/q/', position.coords.latitude, ',', position.coords.longitude, '.json'];
+        xhr2 = new XMLHttpRequest();
+        xhr2.overrideMimeType("application/json");
+        xhr2.open("GET", urlPlace.join(''), true);
+        xhr2.onload = getPlaceComplete;
+        xhr2.send();
+    });
+</script>
+
+</body>
+</html>
